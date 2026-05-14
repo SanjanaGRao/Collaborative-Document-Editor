@@ -282,11 +282,12 @@ export default function DocumentPage() {
         <main className="flex-1 overflow-y-auto">
           <div className="container max-w-4xl px-4 py-8">
             {!canEdit && (
-              <div className="mb-4 rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground">
+              <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                <span className="inline-block h-2 w-2 rounded-full bg-primary/60" />
                 You have view-only access to this document.
               </div>
             )}
-            <div ref={editorRef} className="bg-card rounded-lg border p-6 min-h-[500px]">
+            <div ref={editorRef} className="bg-card rounded-xl border border-border p-8 min-h-[500px]">
               <RichTextEditor
                 content={content}
                 onChange={handleContentChange}
