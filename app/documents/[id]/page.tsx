@@ -92,8 +92,8 @@ export default function DocumentPage() {
     fetchDocument()
   }, [fetchDocument])
 
-  const saveDocument = useCallback(async (newTitle: string, newContent: JSONContent) => {
-    if (!document || !canEdit) return
+  const saveDocument = useCallback(async (newTitle: string, newContent: JSONContent, createVersion = false) => {
+    if (!document || !canEdit || !user) return
 
     setIsSaving(true)
     setSaveStatus('saving')
@@ -113,12 +113,35 @@ export default function DocumentPage() {
       console.error('Error saving document:', error)
       setSaveStatus('error')
     } else {
+      // Create a version entry when manually saving (not auto-save)
+      if (createVersion) {
+        // Get the current version count
+        const { data: versions } = await supabase
+          .from('document_versions')
+          .select('version_number')
+          .eq('document_id', document.id)
+          .order('version_number', { ascending: false })
+          .limit(1)
+        
+        const nextVersionNumber = versions && versions.length > 0 
+          ? versions[0].version_number + 1 
+          : 1
+
+        await supabase.from('document_versions').insert({
+          document_id: document.id,
+          user_id: user.id,
+          title: newTitle,
+          content: newContent,
+          version_number: nextVersionNumber,
+        })
+      }
+
       setSaveStatus('saved')
       setTimeout(() => setSaveStatus('idle'), 2000)
     }
 
     setIsSaving(false)
-  }, [document, canEdit])
+  }, [document, canEdit, user])
 
   const handleTitleChange = (newTitle: string) => {
     setTitle(newTitle)
@@ -231,7 +254,7 @@ export default function DocumentPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => saveDocument(title, content)}
+                onClick={() => saveDocument(title, content, true)}
                 disabled={isSaving}
               >
                 <Save className="mr-2 h-4 w-4" />
@@ -279,6 +302,7 @@ export default function DocumentPage() {
             documentId={params.id as string}
             onClose={() => setCommentsOpen(false)}
             isOpen={commentsOpen}
+            canEdit={canEdit}
           />
         )}
 

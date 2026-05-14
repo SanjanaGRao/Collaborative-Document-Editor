@@ -56,37 +56,37 @@ export function VersionHistoryPanel({
   if (!isOpen) return null
 
   return (
-    <div className="sidebar-panel fixed right-0 top-16 bottom-0 z-40 flex flex-col">
-      <div className="sidebar-header flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <div className="w-80 bg-card border-l border-border flex flex-col h-full">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2 font-semibold">
           <History size={20} />
           <span>Version History</span>
         </div>
-        <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded">
+        <button onClick={onClose} className="p-1 hover:bg-muted rounded">
           <X size={18} />
         </button>
       </div>
 
-      <div className="sidebar-content flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="text-center text-neutral-500 py-4">Loading versions...</div>
+          <div className="text-center text-muted-foreground py-4">Loading versions...</div>
         ) : versions.length === 0 ? (
-          <div className="text-center text-neutral-500 py-4">No versions yet</div>
+          <div className="text-center text-muted-foreground py-4">
+            <p>No versions yet.</p>
+            <p className="text-xs mt-2">Click &quot;Save&quot; to create a version.</p>
+          </div>
         ) : (
           versions.map(version => (
             <button
               key={version.id}
               onClick={() => onSelectVersion(version)}
-              className="version-item w-full"
+              className="w-full mb-2 p-3 bg-muted rounded-lg border border-border hover:bg-muted/80 transition-colors text-left"
             >
-              <div className="version-number">
+              <div className="text-sm font-semibold">
                 Version {version.version_number}: {version.title}
               </div>
-              <div className="version-date">
+              <div className="text-xs text-muted-foreground mt-1">
                 {new Date(version.created_at).toLocaleString()}
-              </div>
-              <div className="version-author text-xs text-neutral-500">
-                ID: {version.user_id.substring(0, 8)}...
               </div>
             </button>
           ))

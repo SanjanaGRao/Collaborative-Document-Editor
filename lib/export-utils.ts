@@ -1,19 +1,13 @@
-import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import TurndownService from 'turndown'
 
+// Generate PDF directly from text content without html2canvas
+// This avoids the oklch/lab color parsing issues
 export async function exportToPDF(
   element: HTMLElement,
   filename: string
 ) {
   try {
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-    })
-
-    const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -21,30 +15,117 @@ export async function exportToPDF(
     })
 
     const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-    const margin = 10
-    const availableWidth = pageWidth - 2 * margin
-    const availableHeight = pageHeight - 2 * margin
+    const margin = 20
+    const maxWidth = pageWidth - 2 * margin
+    let yPosition = margin
 
-    const imgWidth = availableWidth
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    // Add title
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(filename, margin, yPosition)
+    yPosition += 15
 
-    let heightLeft = imgHeight
-    let position = margin
+    // Add horizontal line
+    pdf.setDrawColor(200, 200, 200)
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+    yPosition += 10
 
-    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight)
-    heightLeft -= availableHeight
+    // Extract text content from the editor element
+    const tiptapEditor = element.querySelector('.tiptap')
+    if (tiptapEditor) {
+      // Process each child element
+      const children = tiptapEditor.children
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i] as HTMLElement
+        const tagName = child.tagName.toLowerCase()
+        const text = child.textContent || ''
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + margin
-      pdf.addPage()
-      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight)
-      heightLeft -= availableHeight
+        if (!text.trim()) continue
+
+        // Check if we need a new page
+        if (yPosition > 270) {
+          pdf.addPage()
+          yPosition = margin
+        }
+
+        if (tagName === 'h1') {
+          pdf.setFontSize(20)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 8 + 6
+        } else if (tagName === 'h2') {
+          pdf.setFontSize(16)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 7 + 5
+        } else if (tagName === 'h3') {
+          pdf.setFontSize(14)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 6 + 4
+        } else if (tagName === 'ul' || tagName === 'ol') {
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'normal')
+          const listItems = child.querySelectorAll('li')
+          listItems.forEach((li, index) => {
+            const bullet = tagName === 'ul' ? '•' : `${index + 1}.`
+            const itemText = li.textContent || ''
+            const lines = pdf.splitTextToSize(`${bullet} ${itemText}`, maxWidth - 5)
+            pdf.text(lines, margin + 5, yPosition)
+            yPosition += lines.length * 5 + 2
+          })
+          yPosition += 3
+        } else if (tagName === 'blockquote') {
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'italic')
+          pdf.setTextColor(100, 100, 100)
+          const lines = pdf.splitTextToSize(text, maxWidth - 10)
+          // Draw quote bar
+          pdf.setDrawColor(150, 150, 150)
+          pdf.setLineWidth(0.5)
+          pdf.line(margin, yPosition - 3, margin, yPosition + lines.length * 5)
+          pdf.text(lines, margin + 5, yPosition)
+          pdf.setTextColor(0, 0, 0)
+          yPosition += lines.length * 5 + 5
+        } else {
+          // Default paragraph
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'normal')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 5 + 4
+        }
+      }
+    } else {
+      // Fallback: just get all text content
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'normal')
+      const text = element.textContent || 'No content'
+      const lines = pdf.splitTextToSize(text, maxWidth)
+      pdf.text(lines, margin, yPosition)
+    }
+
+    // Add footer
+    const pageCount = pdf.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i)
+      pdf.setFontSize(9)
+      pdf.setTextColor(150, 150, 150)
+      pdf.text(
+        `Page ${i} of ${pageCount} - Generated by Scribe`,
+        pageWidth / 2,
+        290,
+        { align: 'center' }
+      )
     }
 
     pdf.save(`${filename}.pdf`)
   } catch (err) {
     console.error('Error exporting to PDF:', err)
+    throw err
   }
 }
 
