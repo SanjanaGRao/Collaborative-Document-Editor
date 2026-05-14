@@ -66,7 +66,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-center gap-2 text-foreground">
-            <img src="/logo.jpg" alt="Scribe" className="h-10 w-10 rounded" />
+            <img src="/scribe-logo.png" alt="Scribe" className="h-12 w-auto" />
             <span className="text-2xl font-bold">Scribe</span>
           </div>
           <Card>

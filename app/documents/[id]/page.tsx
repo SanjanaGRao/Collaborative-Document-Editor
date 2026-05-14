@@ -28,7 +28,7 @@ import type { JSONContent } from '@tiptap/react'
 export default function DocumentPage() {
   const params = useParams()
   const router = useRouter()
-  const editorRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<HTMLDivElement | null>(null)
   const [user, setUser] = useState<User | null>(null)
   const [document, setDocument] = useState<DocumentWithShares | null>(null)
   const [title, setTitle] = useState('')
@@ -160,26 +160,26 @@ export default function DocumentPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-white">
-        <div className="container flex h-16 items-center justify-between gap-4 px-4">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="hover:bg-neutral-100">
+            <Button variant="ghost" size="icon" asChild>
               <Link href="/dashboard">
-                <ArrowLeft className="h-5 w-5 text-neutral-600" />
+                <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
             <Input
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              className="h-10 w-80 border-none bg-neutral-50 px-3 text-lg font-semibold shadow-none focus-visible:ring-0 focus-visible:bg-white"
+              className="h-9 w-48 border-none bg-transparent px-2 text-lg font-medium shadow-none focus-visible:ring-0 sm:w-64"
               placeholder="Untitled Document"
               disabled={!canEdit}
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Save status indicator */}
-            <div className="flex items-center gap-1 text-sm text-neutral-500 min-w-24">
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
               {saveStatus === 'saving' && (
                 <>
                   <Cloud className="h-4 w-4 animate-pulse" />
@@ -188,87 +188,82 @@ export default function DocumentPage() {
               )}
               {saveStatus === 'saved' && (
                 <>
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-green-500" />
                   <span className="hidden sm:inline">Saved</span>
                 </>
               )}
               {saveStatus === 'error' && (
                 <>
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-4 w-4 text-destructive" />
                   <span className="hidden sm:inline">Error</span>
                 </>
               )}
             </div>
 
             {/* Toolbar Buttons */}
-            <div className="flex items-center gap-2">
-              <ExportMenu
-                documentTitle={title}
-                documentContent={content}
-                editorRef={editorRef}
-              />
-              
-              {canEdit && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCommentsOpen(!commentsOpen)}
-                  className="flex items-center gap-2 hover:bg-neutral-100"
-                >
-                  <MessageSquare size={18} className="text-neutral-600" />
-                  <span className="hidden sm:inline text-sm">Comments</span>
-                </Button>
-              )}
-
+            <ExportMenu
+              documentTitle={title}
+              documentContent={content}
+              editorRef={editorRef}
+            />
+            
+            {canEdit && (
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setVersionHistoryOpen(!versionHistoryOpen)}
-                className="flex items-center gap-2 hover:bg-neutral-100"
+                onClick={() => setCommentsOpen(!commentsOpen)}
               >
-                <History size={18} className="text-neutral-600" />
-                <span className="hidden sm:inline text-sm">History</span>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Comments</span>
               </Button>
+            )}
 
-              {canEdit && (
-                <Button
-                  size="sm"
-                  onClick={() => saveDocument(title, content)}
-                  disabled={isSaving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Save size={18} className="mr-2" />
-                  Save
-                </Button>
-              )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVersionHistoryOpen(!versionHistoryOpen)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">History</span>
+            </Button>
 
-              {isOwner && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShareDialogOpen(true)}
-                  className="border-neutral-300 hover:bg-neutral-50"
-                >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share
-                </Button>
-              )}
-            </div>
+            {canEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveDocument(title, content)}
+                disabled={isSaving}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+            )}
+
+            {isOwner && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShareDialogOpen(true)}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Share
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
       {/* Editor and Panels */}
-      <div className="flex h-[calc(100vh-64px)]">
+      <div className="flex h-[calc(100vh-56px)]">
         {/* Main Editor */}
         <main className="flex-1 overflow-y-auto">
           <div className="container max-w-4xl px-4 py-8">
             {!canEdit && (
-              <div className="mb-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800 border border-blue-200">
+              <div className="mb-4 rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground">
                 You have view-only access to this document.
               </div>
             )}
-            <div ref={editorRef}>
+            <div ref={editorRef} className="bg-card rounded-lg border p-6 min-h-[500px]">
               <RichTextEditor
                 content={content}
                 onChange={handleContentChange}
