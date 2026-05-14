@@ -81,11 +81,17 @@ export default function DashboardPage() {
   }, [fetchDocuments])
 
   const handleCreateDocument = async () => {
+    console.log('[v0] handleCreateDocument called')
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-    if (!user) return
+    console.log('[v0] User:', user?.id, 'Error:', userError)
+    if (!user) {
+      console.log('[v0] No user found, returning')
+      return
+    }
 
+    console.log('[v0] Creating document for user:', user.id)
     const { data: document, error } = await supabase
       .from('documents')
       .insert({
@@ -99,11 +105,14 @@ export default function DashboardPage() {
       .select()
       .single()
 
+    console.log('[v0] Insert result:', document, 'Error:', error)
     if (error) {
-      console.error('Error creating document:', error)
+      console.error('[v0] Error creating document:', error)
+      alert(`Failed to create document: ${error.message}`)
       return
     }
 
+    console.log('[v0] Redirecting to document:', document.id)
     router.push(`/documents/${document.id}`)
   }
 
