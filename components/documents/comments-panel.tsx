@@ -93,66 +93,72 @@ export function CommentsPanel({ documentId, onClose, isOpen }: CommentsPanelProp
   if (!isOpen) return null
 
   return (
-    <div className="sidebar-panel fixed right-0 top-16 bottom-0 z-40 flex flex-col">
-      <div className="sidebar-header flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <div className="w-80 bg-card border-l border-border flex flex-col h-full">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-2 font-semibold">
           <MessageSquare size={20} />
           <span>Comments</span>
         </div>
-        <button onClick={onClose} className="p-1 hover:bg-neutral-100 rounded">
+        <button onClick={onClose} className="p-1 hover:bg-muted rounded">
           <X size={18} />
         </button>
       </div>
 
-      <div className="sidebar-content flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
-          <div className="text-center text-neutral-500 py-4">Loading comments...</div>
+          <div className="text-center text-muted-foreground py-4">Loading comments...</div>
         ) : comments.length === 0 ? (
-          <div className="text-center text-neutral-500 py-4">No comments yet</div>
+          <div className="text-center text-muted-foreground py-4">No comments yet. Add one below!</div>
         ) : (
           comments.map(comment => (
-            <div key={comment.id} className="comment-item">
+            <div key={comment.id} className="mb-4 p-3 bg-muted rounded-lg border border-border">
               <div className="flex items-start justify-between">
-                <span className="comment-author">{comment.author || 'Anonymous'}</span>
+                <span className="text-sm font-semibold">{comment.author || 'Anonymous'}</span>
                 {comment.status === 'open' && (
                   <button
                     onClick={() => handleResolveComment(comment.id)}
-                    className="p-1 hover:bg-neutral-200 rounded text-neutral-600"
+                    className="p-1 hover:bg-background rounded text-muted-foreground"
                     title="Resolve"
                   >
                     <Check size={16} />
                   </button>
                 )}
               </div>
-              <p className="comment-text">{comment.content}</p>
+              <p className="text-sm mt-2">{comment.content}</p>
               {comment.suggested_text && (
-                <div className="mt-2 p-2 bg-purple-50 rounded border border-purple-200 text-sm">
+                <div className="mt-2 p-2 bg-purple-100 dark:bg-purple-900/20 rounded border border-purple-200 dark:border-purple-800 text-sm">
                   <strong>Suggested:</strong> {comment.suggested_text}
                 </div>
               )}
-              <span className={`comment-status status-${comment.status}`}>
-                {comment.status}
-              </span>
-              <div className="comment-time">
-                {new Date(comment.created_at).toLocaleDateString()}
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`text-xs px-2 py-1 rounded ${
+                  comment.status === 'open' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' :
+                  comment.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                }`}>
+                  {comment.status}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(comment.created_at).toLocaleDateString()}
+                </span>
               </div>
             </div>
           ))
         )}
       </div>
 
-      <div className="border-t border-neutral-200 p-4">
+      <div className="border-t border-border p-4">
         <textarea
           value={newComment}
           onChange={e => setNewComment(e.target.value)}
           placeholder="Add a comment..."
-          className="w-full p-2 border border-neutral-200 rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-2 border border-input bg-background rounded text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
           rows={3}
         />
         <button
           onClick={handleAddComment}
           disabled={!newComment.trim()}
-          className="w-full mt-2 px-3 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:bg-neutral-300 transition-colors"
+          className="w-full mt-2 px-3 py-2 bg-primary text-primary-foreground rounded font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
         >
           Add Comment
         </button>

@@ -1,4 +1,3 @@
-import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import TurndownService from 'turndown'
 
@@ -7,11 +6,31 @@ export async function exportToPDF(
   filename: string
 ) {
   try {
-    const canvas = await html2canvas(element, {
+    // Create a clean copy of the element for PDF generation
+    const clonedElement = element.cloneNode(true) as HTMLElement
+    
+    // Apply simple inline styles to avoid oklch/lab color parsing issues
+    applyPDFStyles(clonedElement)
+    
+    // Temporarily add clone to DOM (hidden) for html2canvas
+    clonedElement.style.position = 'absolute'
+    clonedElement.style.left = '-9999px'
+    clonedElement.style.top = '0'
+    clonedElement.style.backgroundColor = '#ffffff'
+    document.body.appendChild(clonedElement)
+    
+    // Dynamic import html2canvas to avoid SSR issues
+    const html2canvas = (await import('html2canvas')).default
+    
+    const canvas = await html2canvas(clonedElement, {
       scale: 2,
       useCORS: true,
       logging: false,
+      backgroundColor: '#ffffff',
     })
+    
+    // Clean up cloned element
+    document.body.removeChild(clonedElement)
 
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({
@@ -45,7 +64,62 @@ export async function exportToPDF(
     pdf.save(`${filename}.pdf`)
   } catch (err) {
     console.error('Error exporting to PDF:', err)
+    throw err
   }
+}
+
+// Apply simple hex colors to avoid oklch/lab color parsing issues
+function applyPDFStyles(element: HTMLElement) {
+  element.style.backgroundColor = '#ffffff'
+  element.style.color = '#1f2937'
+  element.style.padding = '20px'
+  element.style.fontFamily = 'Arial, sans-serif'
+  
+  // Style all headings
+  element.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+    const heading = el as HTMLElement
+    heading.style.color = '#111827'
+    heading.style.marginBottom = '12px'
+  })
+  
+  // Style all paragraphs
+  element.querySelectorAll('p').forEach(el => {
+    const para = el as HTMLElement
+    para.style.color = '#374151'
+    para.style.lineHeight = '1.6'
+    para.style.marginBottom = '8px'
+  })
+  
+  // Style strong/bold
+  element.querySelectorAll('strong, b').forEach(el => {
+    const bold = el as HTMLElement
+    bold.style.color = '#111827'
+  })
+  
+  // Style lists
+  element.querySelectorAll('ul, ol').forEach(el => {
+    const list = el as HTMLElement
+    list.style.color = '#374151'
+    list.style.paddingLeft = '24px'
+  })
+  
+  // Style code blocks
+  element.querySelectorAll('code, pre').forEach(el => {
+    const code = el as HTMLElement
+    code.style.backgroundColor = '#f3f4f6'
+    code.style.color = '#111827'
+    code.style.padding = '4px 8px'
+    code.style.borderRadius = '4px'
+  })
+  
+  // Style blockquotes
+  element.querySelectorAll('blockquote').forEach(el => {
+    const quote = el as HTMLElement
+    quote.style.borderLeft = '4px solid #6b7280'
+    quote.style.paddingLeft = '16px'
+    quote.style.color = '#6b7280'
+    quote.style.fontStyle = 'italic'
+  })
 }
 
 export function exportToMarkdown(
