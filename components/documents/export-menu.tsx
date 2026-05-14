@@ -7,7 +7,7 @@ import { exportToPDF, exportToMarkdown } from '@/lib/export-utils'
 interface ExportMenuProps {
   documentTitle: string
   documentContent: Record<string, unknown>
-  editorRef: React.RefObject<HTMLDivElement>
+  editorRef: React.RefObject<HTMLDivElement | null>
 }
 
 export function ExportMenu({ documentTitle, documentContent, editorRef }: ExportMenuProps) {
@@ -27,8 +27,15 @@ export function ExportMenu({ documentTitle, documentContent, editorRef }: Export
 
   const handleExportPDF = async () => {
     if (editorRef.current) {
-      await exportToPDF(editorRef.current, documentTitle)
+      try {
+        await exportToPDF(editorRef.current, documentTitle)
+      } catch (err) {
+        console.error('PDF export error:', err)
+        alert('Failed to export PDF. Please try again.')
+      }
       setIsOpen(false)
+    } else {
+      alert('Unable to export PDF - editor not ready')
     }
   }
 

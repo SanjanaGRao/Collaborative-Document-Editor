@@ -46,30 +46,34 @@ export default function DashboardPage() {
       .eq('owner_id', user.id)
       .order('updated_at', { ascending: false })
 
-    // Fetch documents shared with the user
+    // Fetch documents shared with the user - query document_shares first
     const { data: shares } = await supabase
       .from('document_shares')
-      .select(`
-        *,
-        documents (
-          *,
-          profiles:owner_id (*)
-        )
-      `)
-      .or(`shared_with_user_id.eq.${user.id},shared_with_email.eq.${user.email}`)
+      .select('*')
+      .eq('shared_with_email', user.email)
+
+    // Now fetch the actual documents for these shares
+    let sharedDocs: DocumentWithShares[] = []
+    if (shares && shares.length > 0) {
+      const documentIds = shares.map(s => s.document_id)
+      const { data: sharedDocuments } = await supabase
+        .from('documents')
+        .select('*')
+        .in('id', documentIds)
+
+      sharedDocs = (sharedDocuments || []).map(doc => {
+        const share = shares.find(s => s.document_id === doc.id)
+        return {
+          ...doc,
+          can_edit: share?.permission === 'edit',
+        }
+      })
+    }
 
     const ownedWithShareFlag = (owned || []).map(doc => ({
       ...doc,
       is_shared: doc.document_shares && doc.document_shares.length > 0,
     }))
-
-    const sharedDocs = (shares || [])
-      .filter(share => share.documents)
-      .map(share => ({
-        ...share.documents,
-        can_edit: share.permission === 'edit',
-        profiles: share.documents.profiles,
-      }))
 
     setOwnedDocuments(ownedWithShareFlag)
     setSharedDocuments(sharedDocs)
