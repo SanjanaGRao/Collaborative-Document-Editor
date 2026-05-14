@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { RichTextEditor } from '@/components/editor/rich-text-editor'
 import { ShareDialog } from '@/components/documents/share-dialog'
+import { CommentsPanel } from '@/components/documents/comments-panel'
+import { VersionHistoryPanel } from '@/components/documents/version-history-panel'
+import { ExportMenu } from '@/components/documents/export-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,6 +17,8 @@ import {
   Check,
   Cloud,
   AlertCircle,
+  MessageSquare,
+  History,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
@@ -23,6 +28,7 @@ import type { JSONContent } from '@tiptap/react'
 export default function DocumentPage() {
   const params = useParams()
   const router = useRouter()
+  const editorRef = useRef<HTMLDivElement>(null)
   const [user, setUser] = useState<User | null>(null)
   const [document, setDocument] = useState<DocumentWithShares | null>(null)
   const [title, setTitle] = useState('')
@@ -31,6 +37,8 @@ export default function DocumentPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | 'idle'>('idle')
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [versionHistoryOpen, setVersionHistoryOpen] = useState(false)
   const [canEdit, setCanEdit] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -152,26 +160,26 @@ export default function DocumentPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center justify-between gap-4 px-4">
+      <header className="sticky top-0 z-50 border-b bg-white">
+        <div className="container flex h-16 items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="hover:bg-neutral-100">
               <Link href="/dashboard">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-5 w-5 text-neutral-600" />
               </Link>
             </Button>
             <Input
               value={title}
               onChange={(e) => handleTitleChange(e.target.value)}
-              className="h-9 w-48 border-none bg-transparent px-2 text-lg font-medium shadow-none focus-visible:ring-0 sm:w-64"
+              className="h-10 w-80 border-none bg-neutral-50 px-3 text-lg font-semibold shadow-none focus-visible:ring-0 focus-visible:bg-white"
               placeholder="Untitled Document"
               disabled={!canEdit}
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* Save status indicator */}
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1 text-sm text-neutral-500 min-w-24">
               {saveStatus === 'saving' && (
                 <>
                   <Cloud className="h-4 w-4 animate-pulse" />
@@ -180,57 +188,115 @@ export default function DocumentPage() {
               )}
               {saveStatus === 'saved' && (
                 <>
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-green-600" />
                   <span className="hidden sm:inline">Saved</span>
                 </>
               )}
               {saveStatus === 'error' && (
                 <>
-                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <AlertCircle className="h-4 w-4 text-red-600" />
                   <span className="hidden sm:inline">Error</span>
                 </>
               )}
             </div>
 
-            {canEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => saveDocument(title, content)}
-                disabled={isSaving}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save
-              </Button>
-            )}
+            {/* Toolbar Buttons */}
+            <div className="flex items-center gap-2">
+              <ExportMenu
+                documentTitle={title}
+                documentContent={content}
+                editorRef={editorRef}
+              />
+              
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCommentsOpen(!commentsOpen)}
+                  className="flex items-center gap-2 hover:bg-neutral-100"
+                >
+                  <MessageSquare size={18} className="text-neutral-600" />
+                  <span className="hidden sm:inline text-sm">Comments</span>
+                </Button>
+              )}
 
-            {isOwner && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => setShareDialogOpen(true)}
+                onClick={() => setVersionHistoryOpen(!versionHistoryOpen)}
+                className="flex items-center gap-2 hover:bg-neutral-100"
               >
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
+                <History size={18} className="text-neutral-600" />
+                <span className="hidden sm:inline text-sm">History</span>
               </Button>
-            )}
+
+              {canEdit && (
+                <Button
+                  size="sm"
+                  onClick={() => saveDocument(title, content)}
+                  disabled={isSaving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Save size={18} className="mr-2" />
+                  Save
+                </Button>
+              )}
+
+              {isOwner && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShareDialogOpen(true)}
+                  className="border-neutral-300 hover:bg-neutral-50"
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Editor */}
-      <main className="container max-w-4xl px-4 py-8">
-        {!canEdit && (
-          <div className="mb-4 rounded-lg bg-muted px-4 py-2 text-sm text-muted-foreground">
-            You have view-only access to this document.
+      {/* Editor and Panels */}
+      <div className="flex h-[calc(100vh-64px)]">
+        {/* Main Editor */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="container max-w-4xl px-4 py-8">
+            {!canEdit && (
+              <div className="mb-4 rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800 border border-blue-200">
+                You have view-only access to this document.
+              </div>
+            )}
+            <div ref={editorRef}>
+              <RichTextEditor
+                content={content}
+                onChange={handleContentChange}
+                editable={canEdit}
+              />
+            </div>
           </div>
+        </main>
+
+        {/* Comments Panel */}
+        {commentsOpen && (
+          <CommentsPanel
+            documentId={params.id as string}
+            onClose={() => setCommentsOpen(false)}
+            isOpen={commentsOpen}
+          />
         )}
-        <RichTextEditor
-          content={content}
-          onChange={handleContentChange}
-          editable={canEdit}
-        />
-      </main>
+
+        {/* Version History Panel */}
+        {versionHistoryOpen && (
+          <VersionHistoryPanel
+            documentId={params.id as string}
+            onClose={() => setVersionHistoryOpen(false)}
+            isOpen={versionHistoryOpen}
+            onSelectVersion={() => {}}
+          />
+        )}
+      </div>
 
       <ShareDialog
         document={document}
