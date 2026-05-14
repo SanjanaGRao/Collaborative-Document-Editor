@@ -30,7 +30,7 @@ export function DocumentCard({ document, isOwner, onDelete, onShare }: DocumentC
   }
 
   return (
-    <Card className="group transition-shadow hover:shadow-md">
+    <Card className="group transition-all hover:shadow-lg hover:border-primary/40 hover:shadow-primary/5">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-primary/10 p-2">

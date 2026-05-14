@@ -141,7 +141,7 @@ export default function DashboardPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       <Header user={user} />
       
       <main className="container px-4 py-8">
@@ -188,7 +188,7 @@ export default function DashboardPage() {
 
           <TabsContent value="owned">
             {filteredOwned.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16">
                 <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
                 <h3 className="mb-2 text-lg font-medium">No documents yet</h3>
                 <p className="mb-4 text-sm text-muted-foreground">
@@ -216,7 +216,7 @@ export default function DashboardPage() {
 
           <TabsContent value="shared">
             {filteredShared.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/30 py-16">
                 <Users className="mb-4 h-12 w-12 text-muted-foreground" />
                 <h3 className="mb-2 text-lg font-medium">No shared documents</h3>
                 <p className="text-sm text-muted-foreground">
