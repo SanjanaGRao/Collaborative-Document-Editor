@@ -120,24 +120,19 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
   const handleUpload = async () => {
     if (!file) return
 
-    console.log('[v0] handleUpload called with file:', file.name)
     setIsUploading(true)
     setError(null)
 
     try {
       const supabase = createClient()
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      console.log('[v0] User for upload:', user?.id, 'Error:', userError)
       if (!user) {
         throw new Error('You must be logged in to upload files')
       }
 
-      console.log('[v0] Parsing file content...')
       const { title, content } = await parseFileContent(file)
-      console.log('[v0] Parsed title:', title, 'Content paragraphs:', content.content?.length)
 
-      console.log('[v0] Inserting document into database...')
       const { data: document, error: insertError } = await supabase
         .from('documents')
         .insert({
@@ -148,7 +143,6 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
         .select()
         .single()
 
-      console.log('[v0] Insert result:', document, 'Error:', insertError)
       if (insertError) throw insertError
 
       onUploadComplete()
@@ -156,7 +150,6 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
       setFile(null)
       router.push(`/documents/${document.id}`)
     } catch (err) {
-      console.error('[v0] Upload error:', err)
       setError(err instanceof Error ? err.message : 'Failed to upload file')
     } finally {
       setIsUploading(false)
