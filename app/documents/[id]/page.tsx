@@ -302,6 +302,7 @@ export default function DocumentPage() {
             documentId={params.id as string}
             onClose={() => setCommentsOpen(false)}
             isOpen={commentsOpen}
+            canEdit={canEdit}
           />
         )}
 
