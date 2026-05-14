@@ -1,38 +1,13 @@
 import { jsPDF } from 'jspdf'
 import TurndownService from 'turndown'
 
+// Generate PDF directly from text content without html2canvas
+// This avoids the oklch/lab color parsing issues
 export async function exportToPDF(
   element: HTMLElement,
   filename: string
 ) {
   try {
-    // Create a clean copy of the element for PDF generation
-    const clonedElement = element.cloneNode(true) as HTMLElement
-    
-    // Apply simple inline styles to avoid oklch/lab color parsing issues
-    applyPDFStyles(clonedElement)
-    
-    // Temporarily add clone to DOM (hidden) for html2canvas
-    clonedElement.style.position = 'absolute'
-    clonedElement.style.left = '-9999px'
-    clonedElement.style.top = '0'
-    clonedElement.style.backgroundColor = '#ffffff'
-    document.body.appendChild(clonedElement)
-    
-    // Dynamic import html2canvas to avoid SSR issues
-    const html2canvas = (await import('html2canvas')).default
-    
-    const canvas = await html2canvas(clonedElement, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    })
-    
-    // Clean up cloned element
-    document.body.removeChild(clonedElement)
-
-    const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -40,25 +15,111 @@ export async function exportToPDF(
     })
 
     const pageWidth = pdf.internal.pageSize.getWidth()
-    const pageHeight = pdf.internal.pageSize.getHeight()
-    const margin = 10
-    const availableWidth = pageWidth - 2 * margin
-    const availableHeight = pageHeight - 2 * margin
+    const margin = 20
+    const maxWidth = pageWidth - 2 * margin
+    let yPosition = margin
 
-    const imgWidth = availableWidth
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    // Add title
+    pdf.setFontSize(24)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(filename, margin, yPosition)
+    yPosition += 15
 
-    let heightLeft = imgHeight
-    let position = margin
+    // Add horizontal line
+    pdf.setDrawColor(200, 200, 200)
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+    yPosition += 10
 
-    pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight)
-    heightLeft -= availableHeight
+    // Extract text content from the editor element
+    const tiptapEditor = element.querySelector('.tiptap')
+    if (tiptapEditor) {
+      // Process each child element
+      const children = tiptapEditor.children
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i] as HTMLElement
+        const tagName = child.tagName.toLowerCase()
+        const text = child.textContent || ''
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + margin
-      pdf.addPage()
-      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight)
-      heightLeft -= availableHeight
+        if (!text.trim()) continue
+
+        // Check if we need a new page
+        if (yPosition > 270) {
+          pdf.addPage()
+          yPosition = margin
+        }
+
+        if (tagName === 'h1') {
+          pdf.setFontSize(20)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 8 + 6
+        } else if (tagName === 'h2') {
+          pdf.setFontSize(16)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 7 + 5
+        } else if (tagName === 'h3') {
+          pdf.setFontSize(14)
+          pdf.setFont('helvetica', 'bold')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 6 + 4
+        } else if (tagName === 'ul' || tagName === 'ol') {
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'normal')
+          const listItems = child.querySelectorAll('li')
+          listItems.forEach((li, index) => {
+            const bullet = tagName === 'ul' ? '•' : `${index + 1}.`
+            const itemText = li.textContent || ''
+            const lines = pdf.splitTextToSize(`${bullet} ${itemText}`, maxWidth - 5)
+            pdf.text(lines, margin + 5, yPosition)
+            yPosition += lines.length * 5 + 2
+          })
+          yPosition += 3
+        } else if (tagName === 'blockquote') {
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'italic')
+          pdf.setTextColor(100, 100, 100)
+          const lines = pdf.splitTextToSize(text, maxWidth - 10)
+          // Draw quote bar
+          pdf.setDrawColor(150, 150, 150)
+          pdf.setLineWidth(0.5)
+          pdf.line(margin, yPosition - 3, margin, yPosition + lines.length * 5)
+          pdf.text(lines, margin + 5, yPosition)
+          pdf.setTextColor(0, 0, 0)
+          yPosition += lines.length * 5 + 5
+        } else {
+          // Default paragraph
+          pdf.setFontSize(11)
+          pdf.setFont('helvetica', 'normal')
+          const lines = pdf.splitTextToSize(text, maxWidth)
+          pdf.text(lines, margin, yPosition)
+          yPosition += lines.length * 5 + 4
+        }
+      }
+    } else {
+      // Fallback: just get all text content
+      pdf.setFontSize(11)
+      pdf.setFont('helvetica', 'normal')
+      const text = element.textContent || 'No content'
+      const lines = pdf.splitTextToSize(text, maxWidth)
+      pdf.text(lines, margin, yPosition)
+    }
+
+    // Add footer
+    const pageCount = pdf.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      pdf.setPage(i)
+      pdf.setFontSize(9)
+      pdf.setTextColor(150, 150, 150)
+      pdf.text(
+        `Page ${i} of ${pageCount} - Generated by Scribe`,
+        pageWidth / 2,
+        290,
+        { align: 'center' }
+      )
     }
 
     pdf.save(`${filename}.pdf`)
@@ -66,60 +127,6 @@ export async function exportToPDF(
     console.error('Error exporting to PDF:', err)
     throw err
   }
-}
-
-// Apply simple hex colors to avoid oklch/lab color parsing issues
-function applyPDFStyles(element: HTMLElement) {
-  element.style.backgroundColor = '#ffffff'
-  element.style.color = '#1f2937'
-  element.style.padding = '20px'
-  element.style.fontFamily = 'Arial, sans-serif'
-  
-  // Style all headings
-  element.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
-    const heading = el as HTMLElement
-    heading.style.color = '#111827'
-    heading.style.marginBottom = '12px'
-  })
-  
-  // Style all paragraphs
-  element.querySelectorAll('p').forEach(el => {
-    const para = el as HTMLElement
-    para.style.color = '#374151'
-    para.style.lineHeight = '1.6'
-    para.style.marginBottom = '8px'
-  })
-  
-  // Style strong/bold
-  element.querySelectorAll('strong, b').forEach(el => {
-    const bold = el as HTMLElement
-    bold.style.color = '#111827'
-  })
-  
-  // Style lists
-  element.querySelectorAll('ul, ol').forEach(el => {
-    const list = el as HTMLElement
-    list.style.color = '#374151'
-    list.style.paddingLeft = '24px'
-  })
-  
-  // Style code blocks
-  element.querySelectorAll('code, pre').forEach(el => {
-    const code = el as HTMLElement
-    code.style.backgroundColor = '#f3f4f6'
-    code.style.color = '#111827'
-    code.style.padding = '4px 8px'
-    code.style.borderRadius = '4px'
-  })
-  
-  // Style blockquotes
-  element.querySelectorAll('blockquote').forEach(el => {
-    const quote = el as HTMLElement
-    quote.style.borderLeft = '4px solid #6b7280'
-    quote.style.paddingLeft = '16px'
-    quote.style.color = '#6b7280'
-    quote.style.fontStyle = 'italic'
-  })
 }
 
 export function exportToMarkdown(
