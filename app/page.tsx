@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { FileText, Users, Cloud, ArrowRight, MessageSquare, History, Download } from 'lucide-react'
+import { HeroCarousel } from '@/components/homepage/hero-carousel'
 import Link from 'next/link'
 
 export default function HomePage() {
@@ -8,8 +9,8 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="Scribe" className="h-8 w-8 rounded" />
+          <div className="flex items-center gap-3">
+            <img src="/scribe-logo.png" alt="Scribe" className="h-10 w-auto" />
             <span className="text-xl font-bold">Scribe</span>
           </div>
           <div className="flex items-center gap-4">
@@ -23,36 +24,21 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero with Carousel */}
       <main className="flex-1">
-        <section className="container px-4 py-24 text-center">
-          <h1 className="mx-auto max-w-3xl text-balance text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Collaborative document editing made simple
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            Create, edit, and share documents with your team. Rich text formatting, comments, version history, and exports—all in one place.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Button size="lg" asChild>
-              <Link href="/auth/sign-up">
-                Start writing for free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/auth/login">Sign in</Link>
-            </Button>
-          </div>
+        <section className="container px-4 py-12">
+          <HeroCarousel />
         </section>
 
-        {/* Features */}
+        {/* Feature Headline */}
+        <section className="py-12 text-center">
+          <h2 className="mb-4 text-3xl font-bold">Everything you need to collaborate</h2>
+          <p className="text-muted-foreground">Powerful features for modern teams</p>
+        </section>
+        {/* Features Grid */}
         <section className="border-t bg-muted/30 py-24">
           <div className="container px-4">
-            <h2 className="mb-12 text-center text-3xl font-bold">
-              Everything you need to collaborate
-            </h2>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {/* Feature 1 */}
               <div className="rounded-lg border bg-background p-6">
                 <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3">
                   <FileText className="h-6 w-6 text-primary" />
@@ -140,7 +126,7 @@ export default function HomePage() {
       <footer className="border-t py-8">
         <div className="container flex flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="Scribe" className="h-5 w-5 rounded" />
+            <img src="/scribe-logo.png" alt="Scribe" className="h-6 w-auto" />
             <span>Scribe</span>
           </div>
           <p>Built for the Ajaia Technical Assessment</p>
