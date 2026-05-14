@@ -9,8 +9,8 @@ export default function HomePage() {
       <header className="border-b">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <FileText className="h-6 w-6" />
-            <span className="text-xl font-bold">DocCollab</span>
+            <img src="/logo.jpg" alt="Scribe" className="h-8 w-8 rounded" />
+            <span className="text-xl font-bold">Scribe</span>
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
@@ -76,7 +76,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="mb-2 text-xl font-semibold">File Import</h3>
                 <p className="text-muted-foreground">
-                  Import .txt and .md files directly into your workspace. Your content is converted to editable documents.
+                  Import .txt, .md, .doc, and .docx files directly into your workspace. Your content is converted to editable documents.
                 </p>
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function HomePage() {
         <section className="container px-4 py-24 text-center">
           <h2 className="mb-4 text-3xl font-bold">Ready to get started?</h2>
           <p className="mx-auto mb-8 max-w-xl text-muted-foreground">
-            Join DocCollab today and start creating and sharing documents with your team.
+            Join Scribe today and start creating and sharing documents with your team.
           </p>
           <Button size="lg" asChild>
             <Link href="/auth/sign-up">
@@ -102,8 +102,8 @@ export default function HomePage() {
       <footer className="border-t py-8">
         <div className="container flex flex-col items-center justify-between gap-4 px-4 text-sm text-muted-foreground sm:flex-row">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span>DocCollab</span>
+            <img src="/logo.jpg" alt="Scribe" className="h-5 w-5 rounded" />
+            <span>Scribe</span>
           </div>
           <p>Built for the Ajaia Technical Assessment</p>
         </div>

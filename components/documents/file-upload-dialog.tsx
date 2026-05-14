@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Upload, FileText, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import mammoth from 'mammoth'
 
 interface FileUploadDialogProps {
   open: boolean
@@ -27,7 +28,7 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const supportedFormats = ['.txt', '.md']
+  const supportedFormats = ['.txt', '.md', '.doc', '.docx']
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -68,15 +69,30 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
   }
 
   const parseFileContent = async (file: File): Promise<{ title: string; content: Record<string, unknown> }> => {
-    const text = await file.text()
-    const lines = text.split('\n')
-    
-    // Use first line as title if it looks like a heading, otherwise use filename
-    let title = file.name.replace(/\.(txt|md)$/i, '')
+    const extension = '.' + file.name.split('.').pop()?.toLowerCase()
+    let title = file.name.replace(/\.(txt|md|doc|docx)$/i, '')
+    let textContent = ''
+
+    if (extension === '.doc' || extension === '.docx') {
+      // Handle Word documents using mammoth
+      const arrayBuffer = await file.arrayBuffer()
+      const result = await mammoth.extractRawText({ arrayBuffer })
+      textContent = result.value
+    } else {
+      // Handle plain text and markdown
+      textContent = await file.text()
+    }
+
+    const lines = textContent.split('\n')
     let contentLines = lines
 
+    // Use first line as title if it looks like a heading
     if (lines[0]?.startsWith('#')) {
       title = lines[0].replace(/^#+\s*/, '')
+      contentLines = lines.slice(1)
+    } else if (lines[0]?.trim() && lines[0].length < 100) {
+      // Use first line as title if it's short enough
+      title = lines[0].trim()
       contentLines = lines.slice(1)
     }
 
@@ -89,8 +105,13 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
         .filter(p => p.trim())
         .map(paragraph => ({
           type: 'paragraph',
-          content: [{ type: 'text', text: paragraph }],
+          content: [{ type: 'text', text: paragraph.trim() }],
         })),
+    }
+
+    // Ensure at least one paragraph
+    if (content.content.length === 0) {
+      content.content = [{ type: 'paragraph', content: [] }]
     }
 
     return { title, content }
@@ -141,7 +162,7 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
         <DialogHeader>
           <DialogTitle>Import document</DialogTitle>
           <DialogDescription>
-            Upload a .txt or .md file to create a new document. The file content will be imported as an editable document.
+            Upload a .txt, .md, .doc, or .docx file to create a new document. The file content will be imported as an editable document.
           </DialogDescription>
         </DialogHeader>
 
@@ -186,7 +207,7 @@ export function FileUploadDialog({ open, onOpenChange, onUploadComplete }: FileU
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".txt,.md"
+                  accept=".txt,.md,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="sr-only"
                   onChange={handleFileSelect}
                 />
